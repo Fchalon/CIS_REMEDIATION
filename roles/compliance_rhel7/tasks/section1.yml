@@ -1,0 +1,944 @@
+- name: Rule 1.1.1.1 | Ensure mounting of cramfs filesystems is disabled
+  lineinfile:
+    dest: /etc/modprobe.d/CIS.conf
+    regexp: "^(#)?install cramfs(\\s|$)"
+    line: "install cramfs /bin/true"
+    create: yes
+  when:
+    - rhel7cis_rule_1_1_1_1|bool
+  tags:
+    - rule_1.1.1.1
+    - level1
+    - cramfs
+#*****************************************************************************************************************
+- name: "Rule 1.1.1.1 | Remove cramfs module"
+  modprobe:
+    name: cramfs
+    state: absent
+  when:
+    - rhel7cis_rule_1_1_1_1|bool
+  tags:
+    - level1
+    - rule_1.1.1.1
+    - cramfs
+#*****************************************************************************************************************
+- name: Rule 1.1.1.3 | Ensure mounting of udf filesystems is disabled
+  lineinfile:
+    dest: /etc/modprobe.d/CIS.conf
+    regexp: "^(#)?install udf(\\s|$)"
+    line: "install udf /bin/true"
+    create: yes
+  when:
+    - rhel7cis_rule_1_1_1_3|bool
+  tags:
+    - rule_1.1.1.3
+    - level1
+    - udf
+#*****************************************************************************************************************
+- name: "Rule 1.1.1.3 | Remove udf module"
+  modprobe:
+    name: udf
+    state: absent
+  when:
+    - rhel7cis_rule_1_1_1_3|bool
+  tags:
+    - level1
+    - rule_1.1.1.3
+    - udf
+#*****************************************************************************************************************
+- name: check if /tmp is mounted on separate partition
+  shell: mount | grep  "on /tmp "| grep -v tmpfs
+  register: tmp_mount
+  changed_when: no
+  failed_when: no
+  tags:
+    - rule_1.1.2
+    - rule_1.1.3
+    - rule_1.1.4
+    - rule_1.1.5
+    - level1
+    - tmp
+#*****************************************************************************************************************
+- name:  Rule 1.1.4 | Ensure nodev option set on /tmp partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/tmp)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,nodev \6'
+  when:
+      - tmp_mount.rc == 0
+      - rhel7cis_rule_1_1_4|bool
+  notify: remount tmp
+  tags:
+    - rule_1.1.4
+    - level1
+    - tmp
+#*****************************************************************************************************************
+
+
+- name:  Rule 1.1.3 | Ensure noexec option set on /tmp partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/tmp)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?noexec(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,noexec \6'
+  when:
+      - tmp_mount.rc == 0
+      - rhel7cis_rule_1_1_3|bool
+  notify: remount tmp
+  tags:
+    - rule_1.1.3
+    - level1
+    - tmp
+#*****************************************************************************************************************
+
+- name:  Rule 1.1.5 | Ensure nosuid option set on /tmp partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/tmp)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nosuid(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,nosuid\6'
+  when:
+      - tmp_mount.rc == 0
+      - rhel7cis_rule_1_1_5|bool
+  notify: remount tmp
+  tags:
+    - rule_1.1.5
+    - level1
+    - tmp
+#*****************************************************************************************************************
+
+- name : Rule 1.1.2 | Ensure separate partition exists for /tmp | enable tmp.mount
+  systemd:
+    name: tmp.mount
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+    state: started
+  when:
+      - tmp_mount.rc != 0
+      - rhel7cis_rule_1_1_2|bool
+  tags:
+    - rule_1.1.2
+    - level1
+    - tmp
+#*****************************************************************************************************************
+- name : Rule 1.1.5|1.1.3|1.1.4 | Ensure nodev, nosuid, noexec options set on /tmp tmpfs
+  copy:
+    src: files/tmp.mount
+    dest: /usr/lib/systemd/system
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart tmp.mount
+  when:
+      - tmp_mount.rc != 0
+      - rhel7cis_rule_1_1_3|bool
+      - rhel7cis_rule_1_1_4|bool
+      - rhel7cis_rule_1_1_5|bool
+  tags:
+    - rule_1.1.3
+    - rule_1.1.4
+    - rule_1.1.5
+    - level1
+    - tmp
+
+
+####*****************************************************************************************************************
+###- name: check if /var is mounted on separate partition
+###  shell: mount | grep  "on /var "
+###  register: var_mount
+###  changed_when: no
+###  failed_when: no
+###  tags:
+###    - rule_1.1.3.2
+###    - rule_1.1.3.3
+###    - rule_1.1.3.4
+###    - level1
+###    - var
+###
+####*****************************************************************************************************************
+###- name:  rule 1.1.3.2 Ensure nodev option set on /var partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nodev \6'
+###  when:
+###      - var_mount.rc == 0
+###  notify: remount var
+###  tags:
+###    - rule_1.1.3.2
+###    - level1
+###    - var
+####*****************************************************************************************************************
+###
+###
+###- name:  rule 1.1.3.3 Ensure noexec option set on /var partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?noexec(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,noexec \6'
+###  when:
+###      - var_mount.rc == 0
+###  notify: remount var
+###  tags:
+###    - rule_1.1.3.2
+###    - rule_1.1.3.3
+###    - rule_1.1.3.4
+###    - level1
+###    - var
+####*****************************************************************************************************************
+###
+###- name:  rule 1.1.3.4 Ensure nosuid option set on /var partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nosuid(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nosuid\6'
+###  when:
+###      - var_mount.rc == 0
+###  notify: remount var
+###  tags:
+###    - rule_1.1.3.2
+###    - rule_1.1.3.3
+###    - rule_1.1.3.4
+###    - level1
+###    - var
+####*****************************************************************************************************************
+- name: check if /var/tmp is mounted on separate partition
+  shell: mount | grep  "on /var/tmp "
+  register: vartmp_mount
+  changed_when: no
+  failed_when: no
+  tags:
+    - rule_1.1.12
+    - rule_1.1.13
+    - rule_1.1;14
+    - level1
+    - vartmp
+
+#*****************************************************************************************************************
+- name:  Rule 1.1.13 | Ensure nodev option set on /var/tmp partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/var/tmp)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,nodev \6'
+  when:
+      - vartmp_mount.rc == 0
+      - rhel7cis_rule_1_1_13|bool
+  notify: remount vartmp
+  tags:
+    - rule_1.1.13
+    - level1
+    - vartmp
+#*****************************************************************************************************************
+
+
+- name:  Rule 1.1.12 | Ensure noexec option set on /var/tmp partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/var/tmp)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?noexec(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,noexec \6'
+  when:
+      - vartmp_mount.rc == 0
+      - rhel7cis_rule_1_1_12|bool
+  notify: remount vartmp
+  tags:
+    - rule_1.1.12
+    - level1
+    - vartmp
+#*****************************************************************************************************************
+- name:  rule 1.1.14 Ensure nosuid option set on /var/tmp partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/var/tmp)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nosuid(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,nosuid\6'
+  when:
+      - vartmp_mount.rc == 0
+      - rhel7cis_rule_1_1_14|bool
+  notify: remount vartmp
+  tags:
+    - rule_1.1.14
+    - level1
+    - vartmp
+####*****************************************************************************************************************
+###- name: check if /var/log is mounted on separate partition
+###  shell: mount | grep  "on /var/log "
+###  register: varlog_mount
+###  changed_when: no
+###  failed_when: no
+###  tags:
+###    - rule_1.1.5.2
+###    - rule_1.1.5.3
+###    - rule_1.1.5.4
+###    - level1
+###    - varlog
+###
+####*****************************************************************************************************************
+###- name:  rule 1.1.5.2 Ensure nodev option set on /var/log partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var/log)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nodev \6'
+###  when:
+###      - varlog_mount.rc == 0
+###  notify: remount varlog
+###  tags:
+###    - rule_1.1.5.2
+###    - level1
+###    - varlog
+####*****************************************************************************************************************
+###
+###
+###- name:  rule 1.1.5.3 Ensure noexec option set on /var/log partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var/log)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?noexec(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,noexec \6'
+###  when:
+###      - varlog_mount.rc == 0
+###  notify: remount varlog
+###  tags:
+###    - rule_1.1.5.2
+###    - rule_1.1.5.3
+###    - rule_1.1.5.4
+###    - level1
+###    - varlog
+####*****************************************************************************************************************
+###
+###- name:  rule 1.1.5.4 Ensure nosuid option set on /var/log partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var/log)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nosuid(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nosuid\6'
+###  when:
+###      - varlog_mount.rc == 0
+###  notify: remount varlog
+###  tags:
+###    - rule_1.1.5.2
+###    - rule_1.1.5.3
+###    - rule_1.1.5.4
+###    - level1
+###    - varlog
+####*****************************************************************************************************************
+####*****************************************************************************************************************
+###- name: check if /var/log/audit is mounted on separate partition
+###  shell: mount | grep  "on /var/log/audit "
+###  register: varlogaudit_mount
+###  changed_when: no
+###  failed_when: no
+###  tags:
+###    - rule_1.1.6.2
+###    - rule_1.1.6.3
+###    - rule_1.1.6.4
+###    - level1
+###    - varlogaudit
+###
+####*****************************************************************************************************************
+###- name:  rule 1.1.6.2 Ensure noexec option set on /var/log/audit partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var/log/audit)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?noexec(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,noexec \6'
+###  when:
+###      - varlogaudit_mount.rc == 0
+###      - rhel8_rule_1_1_6_2|bool
+###  notify: remount varlogaudit
+###  tags:
+###    - rule_1.1.6.2
+###    - level1
+###    - varlogaudit
+####*****************************************************************************************************************
+###- name:  rule 1.1.6.3 Ensure nodev option set on /var/log/audit partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var/log/audit)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nodev \6'
+###  when:
+###      - varlogaudit_mount.rc == 0
+###      - rhel8_rule_1_1_6_3|bool
+###  notify: remount varlogaudit
+###  tags:
+###    - rule_1.1.6.3
+###    - level1
+###    - varlogaudit
+####*****************************************************************************************************************
+###- name:  rule 1.1.6.4 Ensure nosuid option set on /var/log/audit partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/var/log/audit)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nosuid(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nosuid \6'
+###  when:
+###      - varlogaudit_mount.rc == 0
+###      - rhel8_rule_1_1_6_4|bool
+###  notify: remount varlogaudit
+###  tags:
+###    - rule_1.1.6.4
+###    - level1
+###    - varlogaudit
+####*****************************************************************************************************************
+- name: check if /home is mounted on separate partition
+  shell: mount | grep  "on /home "
+  register: home_mount
+  changed_when: no
+  failed_when: no
+
+  tags:
+    - rule_1.1.18
+    - level1
+    - home
+
+#*****************************************************************************************************************
+- name:  Rule 1.1.18 | Ensure nodev option set on /home partition
+  replace:
+    path: /etc/fstab
+    backup: yes
+    regexp: '^(\S+\s+)(\/home)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+    replace: '\1\2 \4 \5,nodev \6'
+  when:
+      - home_mount.rc == 0
+      - rhel7cis_rule_1_1_18|bool
+  notify: remount home
+  tags:
+    - rule_1.1.18
+    - level1
+    - home
+#*****************************************************************************************************************
+###- name:  rule 1.1.7.3 Ensure nodev option set on /home partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/home)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nodev(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nodev \6'
+###  when:
+###      - home_mount.rc == 0
+###      - rhel8_rule_1_1_7_3|bool
+###  notify: remount home
+###  tags:
+###    - rule_1.1.7.3
+###    - level1
+###    - home
+####*****************************************************************************************************************
+###- name:  rule 1.1.7.4 Ensure nosuid option set on /home partition
+###  replace:
+###    path: /etc/fstab
+###    backup: yes
+###    regexp: '^(\S+\s+)(\/home)(\s+)((?:ext4|xfs)\s+)(?!(?:\S*,)?nosuid(?:,\S*)?\s+)(\S+)(\s+.+)$'
+###    replace: '\1\2 \4 \5,nosuid \6'
+###  when:
+###      - home_mount.rc == 0
+###      - rhel8_rule_1_1_7_4|bool
+###  notify: remount home
+###  tags:
+###    - rule_1.1.7.4
+###    - level1
+###    - home
+#*****************************************************************************************************************
+- name: Rule 1.1.6 Ensure /dev/shm is configured\n
+        Rule 1.1.7 Ensure noexec option set on /dev/shm partition\n
+        Rule 1.1.8 Ensure nodev option set on /dev/shm partition\n
+        Rule 1.1.9 Ensure nosuid option set on /dev/shm partition"
+  mount:
+    name: /dev/shm
+    src: tmpfs
+    state: mounted
+    fstype: tmpfs
+    opts: "defaults,nodev,nosuid,noexec"
+  when:
+      - rhel7cis_rule_1_1_6|bool
+      - rhel7cis_rule_1_1_7|bool
+      - rhel7cis_rule_1_1_8|bool
+      - rhel7cis_rule_1_1_9|bool
+  notify: remount shm
+  tags:
+    - level1
+    - rule_1.1.6
+    - rule_1.1.7
+    - rule_1.1.8
+    - rule_1.1.9
+
+#*****************************************************************************************************************
+- name: rule 1.1.24 | Ensure disable USB Storage
+  lineinfile:
+    dest: /etc/modprobe.d/usb_storage.conf
+    regexp: "^(#)?install usb-storage(\\s|$)"
+    line: "install usb-storage /bin/true"
+    create: yes
+  when:
+    - rhel7cis_rule_1_1_24|bool
+  tags:
+    - rule_1.1.24
+    - level1
+    - usb_storage
+#*****************************************************************************************************************
+- name: "rule 1.1.24 | Ensure disable USB Storage"
+  modprobe:
+    name: usb-storage
+    state: absent
+  when:
+    - rhel7cis_rule_1_1_24|bool
+  tags:
+    - level1
+    - rule_1.1.24
+    - usb-storage
+#*********************************************************************************
+- name: "Rule 1.2.1 | Ensure GPG keys are configured"
+  command: gpg --quiet --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-{{ ansible_distribution|lower }}-release
+  register:  rhel7cis_rule_1_2_1_out
+  changed_when: no
+  when:
+      - rhel7cis_rule_1_2_1|bool
+      - ansible_distribution == "RedHat"
+  tags:
+      - level1
+      - notscored
+      - patch
+      - rule_1.2.1
+#*********************************************************************************
+- name: Rule 1.2.1 | Ensure GPG keys are configured
+  block:
+    - name: Display Output | 1.2.1| When Not Compliant
+      debug:
+          msg="NOT_COMPLIANT|CIS_RESULT| 1.2.1 |GPG keys are configured|{{ansible_hostname}}|CHANGE_REQUIRED|{{rhel7cis_rule_1_2_1_out.changed}}"
+      when:
+           rhel7cis_rule_1_2_1_out.changed
+    - name: Display Output | 1.2.1| When Compliant
+      debug:
+          msg="SUCCESS_COMPLIANT|CIS_RESULT| 1.2.1 |GPG keys are configured|{{ansible_hostname}}|CHANGE_REQUIRED|{{rhel7cis_rule_1_2_1_out.changed}}"
+      when:
+           not  rhel7cis_rule_1_2_1_out.changed
+  when:
+      - rhel7cis_rule_1_2_1|bool
+      - ansible_distribution == "RedHat"
+  tags:
+      - level1
+      - notscored
+      - patch
+      - rule_1.2.1
+      - customcheck
+#*****************************************************************************************************************
+- name : Rule 1.2.3 | Ensure gpgcheck is globally activated (/etc/yum.conf)
+  replace:
+    name: /etc/yum.conf
+    regexp: "^gpgcheck = 0"
+    replace: "gpgcheck = 1"
+  when:
+    -  rhel7cis_rule_1_2_3|bool
+  tags:
+    - level1
+    - rule_1.2.3
+    - gpgcheck
+#*********************************************************************************
+- name: Rule 1.2.3 | Ensure gpgcheck is globally activated (/etc/yum.repo.d/*) list files
+  find:
+      paths: /etc/yum.repos.d
+      patterns: "*.repo"
+  register: yum_repos
+  changed_when: no
+  when:
+      - rhel7cis_rule_1_2_3|bool
+  tags:
+      - level1
+      - rule_1.2.3
+      - gpgcheck
+#*********************************************************************************
+- name: Rule 1.2.3 | Ensure gpgcheck is globally activated (/etc/yum.repo.d/*)
+  replace:
+      name: "{{ item.path }}"
+      regexp: "^gpgcheck = 0"
+      replace: "gpgcheck = 1"
+  with_items : "{{ yum_repos.files }}"
+  when:
+      - rhel7cis_rule_1_2_3|bool
+  tags:
+      - level1
+      - rule_1.2.3
+      - gpgcheck
+
+
+#*****************************************************************************************************************
+- name : Rule 1.3.1 | Ensure AIDE is installed
+  yum:
+    name: aide
+    state: present
+  when:
+    -  rhel7cis_rule_1_3_1|bool
+  tags:
+    - level1
+    - rule_1.3.1
+    - aide
+- name: Check if /var/lib/aide/aide.db.gz exists
+  stat:
+    path: /var/lib/aide/aide.db.gz
+  register: stat_aide_result
+  when:
+    -  rhel7cis_rule_1_3_1|bool
+  tags:
+    - level1
+    - rule_1.3.1
+    - aide
+#*****************************************************************************************************************
+- name : Rule 1.3.1 | initialyse aide DB 
+  shell: "aide --init"
+  register: aideinit
+  when:
+    -  rhel7cis_rule_1_3_1|bool
+    - not stat_aide_result.stat.exists
+  tags:
+    - level1
+    - rule_1.3.1
+    - aide
+
+#*****************************************************************************************************************
+- name : Rule 1.3.1 | create aide DB 
+  copy:
+    remote_src: true
+    src: /var/lib/aide/aide.db.new.gz
+    dest: /var/lib/aide/aide.db.gz
+    owner: root
+    group: root
+    mode: 0600
+  when:
+    - rhel7cis_rule_1_3_1|bool
+    - not stat_aide_result.stat.exists
+  tags:
+    - level1
+    - rule_1.3.1
+    - aide
+#*****************************************************************************************************************
+- name: Rule 1.3.2 | Ensure filesystem integrity is regulary checked
+  cron:
+    name: "filesystem integrity check"
+    user: root
+    minute: 0
+    hour: 5
+    job: "/usr/sbin/aide --check"
+    state: present
+  when:
+    - rhel7cis_rule_1_3_2|bool
+  tags:
+    - level1
+    - rule_1.3.2
+    - aide
+#*****************************************************************************************************************
+- name: Rule  1.1.221 | Ensure sticky bit is set on all world-writable directories"
+  shell: |
+      df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
+  changed_when: no
+  failed_when: no
+  register:  rhel7cis_rule_1_1_21_out
+  when:
+      - rhel7cis_rule_1_1_22|bool
+  tags:
+      - level1
+      - patch
+      - rule_1.1.22
+      - customcheck
+  check_mode: no
+#*****************************************************************************************************************
+- name: Populate service facts
+  service_facts:
+
+- name : Rule 1.1.23 | Disable Automounting
+  systemd:
+    name: autofs
+    enabled: no
+    masked: yes
+    state: stopped
+  when:
+      - rhel7cis_rule_1_1_23|bool
+      - ansible_facts.services['autofs.service'] is defined
+  tags:
+    - rule_1.1.23
+    - level1
+    - autofs
+
+- name: Rule 1.1.23 | Disable Automounting (uninstall autofs)
+  yum:
+    name: autofs
+    state: absent
+  when:
+      - rhel7cis_rule_1_1_23|bool
+      - ansible_facts.services['autofs.service'] is defined
+  tags:
+    - rule_1.1.23
+    - level1
+    - autofs
+
+#*****************************************************************************************************************
+- name: Rule 1.2.5 | Ensure the rhnsd Daemon is disabled
+  systemd:
+    name: rhnsd
+    enabled: no
+    masked: yes
+    state: stopped
+  when:
+      - rhel7cis_rule_1_2_5|bool
+      - ansible_facts.services['rhnsd.service'] is defined
+  tags:
+    - rule_1.2.5
+    - level1
+    - rhnsd
+#*****************************************************************************************************************
+- name: Rule 1.4.2 | Ensure permissions on bootloader config are configured ( grub.cfg)
+  file:
+    path: /boot/grub2/grub.cfg
+    owner: root
+    group: root
+    mode: 0700
+  when: 
+      - rhel7cis_rule_1_4_2|bool
+  tags:
+    - rule_1.4.2
+    - level1
+    - bootloader
+- name: Rule 1.4.2 | Ensure permissions on bootloader config are configured | check is user.cfg exist
+  stat:
+    path: /boot/grub2/user.cfg
+  register: stat_user
+  when: 
+      - rhel7cis_rule_1_4_2|bool
+  tags:
+    - rule_1.4.2
+    - level1
+    - bootloader
+- name:  Rule 1.4.2 | Ensure permissions on bootloader config are configured ( user.cfg)
+  file: 
+    path: /boot/grub2/user.cfg
+    owner: root
+    group: root
+    mode: 0700
+  when: 
+      - rhel7cis_rule_1_4_2|bool
+      - stat_user.stat.exists
+  tags:
+    - rule_1.4.2
+    - level1
+    - bootloader
+#*****************************************************************************************************************
+- name: Rule 1.5.1 | Ensure core dumps are restricted (sysctl.conf)
+  sysctl:
+      name: fs.suid_dumpable
+      value: 0
+      state: present
+      reload: yes
+      sysctl_set: yes
+      ignoreerrors: yes
+  when:
+      - rhel7cis_rule_1_5_1|bool
+  tags:
+      - level1
+      - sysctl
+      - rule_1.5.1
+#*****************************************************************************************************************
+- name: Rule 1.5.1 | PATCH | Ensure core dumps are restricted (limits.conf)
+  lineinfile:
+      state: present
+      dest: /etc/security/limits.conf
+      regexp: '^#?\\*.*hard    core'
+      line: '*                hard    core            0'
+      insertbefore: '^# End of file'
+      backup: yes
+  when:
+      - rhel7cis_rule_1_5_1|bool
+  tags:
+      - level1
+      - limits
+      - rule_1.5.1
+#****************************************************************************************************************
+- name: Rule 1.5.2 | Ensure XD/NX support is enable
+  shell: dmesg|grep -E "NX|XD" | grep " active"
+  changed_when: no
+  register:  rhel7cis_rule_1_5_2_out
+  when:
+      - rhel7cis_rule_1_5_2|bool
+  tags:
+      - level1
+      - rule_1.5.2
+
+- name: Display Output | 1.5.2| Check Compliant
+  block:
+    - name: Display Output | 1.5.2| When Not Compliant
+      debug:
+          msg="NOT_COMPLIANT|CIS_RESULT| 1.5.2 | XD/NX support is enabled|{{ansible_hostname}}|CHANGE_REQUIRED|{{rhel7cis_rule_1_5_2_out.changed}}"
+      when:
+           rhel7cis_rule_1_5_2_out.changed
+    - name: Display Output | 1.5.2| When Compliant
+      debug:
+          msg="SUCCESS_COMPLIANT|CIS_RESULT| 1.5.2 | XD/NX support is enabled|{{ansible_hostname}}|CHANGE_REQUIRED|{{rhel7cis_rule_1_5_2_out.changed}}"
+      when:
+           not  rhel7cis_rule_1_5_2_out.changed
+  when:
+      - rhel7cis_rule_1_5_2|bool
+  tags:
+      - level1
+      - level2
+      - patch
+      - rule_1.5.2
+      - customcheck
+#*********************************************************************************
+- name: Rule 1.5.3 | Ensure addresses space layout randomization is enabled (sysctl.conf)
+  sysctl:
+      name: kernel.randomize_va_space
+      value: 2
+      state: present
+      reload: yes
+      sysctl_set: yes
+      ignoreerrors: yes
+  when:
+      - rhel7cis_rule_1_5_3|bool
+  tags:
+      - level1
+      - sysctl
+      - rule_1.5.3
+#*********************************************************************************
+- name: Rule 1.5.4 | Ensure prelink is not installed
+  shell : "rpm -q prelink"
+  changed_when: no
+  failed_when: no
+  register: prelink_pkg
+  when:
+      - rhel7cis_rule_1_5_4|bool
+  tags:
+      - level1
+      - prelink
+      - rule_1.5.4
+
+- name: Rule 1.5.4 | Ensure prelink is not installed (uninstall prelink)
+  command: prelink -ua
+  when:
+      - prelink_pkg.rc == 0
+      - rhel7cis_rule_1_5_4|bool
+  tags:
+      - level1
+      - rule_1.5.4
+
+- name:  Rule 1.5.4 | Ensure prelink is not installed (uninstall prelink)
+  yum:
+    name: prelink
+    state: absent
+  when:
+      - rhel7cis_rule_1_5_4|bool
+  tags:
+      - level1
+      - rule_1.5.4
+
+#*********************************************************************************
+- name: Rule 1.6.1.1 | Ensure SElinux is installed
+  yum:
+      name: libselinux
+      state: present
+  when:
+      - rhel7cis_rule_1_6_1_1|bool
+  tags:
+      - selinux
+      - rule_1.6.1.1
+#*********************************************************************************
+- name: Rule 1.6.1.7 | Ensure SETroubleshoot is not installed
+  yum:
+    name: setroubleshoot
+    state: absent
+  when:
+      - rhel7cis_rule_1_6_1_7|bool
+  tags:
+      - selinux
+      - rule_1.6.1.7
+#*********************************************************************************
+- name: Rule 1.6.1.8 | Ensure the MCS Translation Service (mcstrans) is not installed
+  yum:
+    name: mcstrans
+    state: absent
+  when:
+      - rhel7cis_rule_1_6_1_8|bool
+  tags:
+      - selinux
+      - rule_1.6.1.8
+#*********************************************************************************
+- name: Rule 1.7.1 | Ensure message of the day is configured properly"
+  template:
+      src: etc/motd.j2
+      dest: /etc/motd
+  when:
+      - rhel7cis_rule_1_7_1|bool
+  tags:
+      - level1
+      - banner
+      - rule_1.7.1
+#*********************************************************************************
+- name: Rule 1.7.2 | Ensure remote login warning banner is configured properly
+  template:
+      src: etc/motd.j2
+      dest: /etc/issue
+  when:
+      - rhel7cis_rule_1_7_2|bool
+  tags:
+      - level1
+      - banner
+      - rule_1.7.2
+#*********************************************************************************
+- name: Rule 1.7.3 | Ensure remote login warning banner is configured properly
+  template:
+    src: etc/motd.j2
+    dest: /etc/issue.net
+  when:
+      - rhel7cis_rule_1_7_3|bool
+  tags:
+      - level1
+      - banner
+      - rule_1.7.3
+#*********************************************************************************
+- name: Rule 1.7.4 | Ensure permissions on /etc/motd are configured
+  file:
+    path: /etc/motd
+    owner: root
+    group: root
+    mode:  0644
+  when:
+      - rhel7cis_rule_1_7_4|bool
+  tags:
+      - level1
+      - banner
+      - rule_1.7.4
+#*********************************************************************************
+- name: Rule 1.7.5 | Ensure permissions on /etc/issue are configured
+  file:
+    path: /etc/issue
+    owner: root
+    group: root
+    mode:  0644
+  when:
+      - rhel7cis_rule_1_7_5|bool
+  tags:
+      - level1
+      - banner
+      - rule_1.7.5
+#*********************************************************************************
+#*********************************************************************************
+- name: Rule 1.7.6 | Ensure permissions on /etc/issue.net are configured
+  file:
+    path: /etc/issue.net
+    owner: root
+    group: root
+    mode:  0644
+  when:
+      - rhel7cis_rule_1_7_6|bool
+  tags:
+      - level1
+      - banner
+      - rule_1.7.6
+#*********************************************************************************
+
+#*********************************************************************************
+
+

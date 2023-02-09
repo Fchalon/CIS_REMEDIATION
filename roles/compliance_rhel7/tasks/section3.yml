@@ -1,0 +1,192 @@
+#*****************************************************************************************************************
+- name: Rule 3.2.1 | Ensure IP forwarding is disabled
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 0
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  when:
+      - rhel7cis_rule_3_2_1|bool
+  tags:
+      - level1
+      - ip_forward
+      - rule_3.2.1
+#*****************************************************************************************************************
+- name: Rule 3.2.2 | Ensure packet redirect sending is disabled
+  sysctl:
+    name: "{{ item }}"
+    value: 0
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv4.conf.all.send_redirects
+    - net.ipv4.conf.default.send_redirects 
+  when:
+      - rhel7cis_rule_3_2_2|bool
+  tags:
+      - level1
+      - packet_redirect
+      - rule_3.2.2
+
+
+#*****************************************************************************************************************
+- name: Rule 3.3.1 | Ensure source routed packets are not accepted
+  sysctl:
+    name: "{{ item }}"
+    value: 0
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv4.conf.all.accept_source_route
+    - net.ipv4.conf.default.accept_source_route
+    - net.ipv6.conf.all.accept_source_route
+    - net.ipv6.conf.default.accept_source_route
+  when:
+    - rhel7cis_rule_3_3_1|bool
+  tags:
+      - level1
+      - rule_3.3.1
+#*****************************************************************************************************************
+- name: Rule 3.3.2 | Ensure ICMP redirects are not accepted
+  sysctl:
+    name: "{{ item }}"
+    value: 0
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv4.conf.all.accept_redirects
+    - net.ipv4.conf.default.accept_redirects
+    - net.ipv6.conf.all.accept_redirects
+    - net.ipv6.conf.default.accept_redirects
+  when:
+    - rhel7cis_rule_3_3_2|bool
+  tags:
+      - level1
+      - rule_3.3.2
+#*****************************************************************************************************************
+- name: Rule 3.3.3 | Ensure secure ICMP redirects are not accepted
+  sysctl:
+    name: "{{ item }}"
+    value: 0
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv4.conf.all.secure_redirects
+    - net.ipv4.conf.default.secure_redirects
+  when:
+    - rhel7cis_rule_3_3_3|bool
+  tags:
+      - level1
+      - rule_3.3.3
+#*****************************************************************************************************************
+- name: Rule 3.3.4 | Ensure suspicious packets are logged
+  sysctl:
+    name: "{{ item }}"
+    value: 1
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv4.conf.all.log_martians
+    - net.ipv4.conf.default.log_martians
+  when:
+    - rhel7cis_rule_3_3_4|bool
+  tags:
+      - level1
+      - rule_3.3.4
+#*****************************************************************************************************************
+- name: Rule 3.3.5 | Ensure broadcast ICMP requests are ignored
+  sysctl:
+    name: net.ipv4.icmp_echo_ignore_broadcasts
+    value: 1
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  when:
+    - rhel7cis_rule_3_3_5|bool
+  tags:
+      - level1
+      - rule_3.3.5
+#*****************************************************************************************************************
+- name: Rule 3.3.6 | Ensure bogus ICMP responses are ignored
+  sysctl:
+    name: net.ipv4.icmp_ignore_bogus_error_responses
+    value: 1
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  when:
+    - rhel7cis_rule_3_3_6|bool
+  tags:
+      - level1
+      - rule_3.3.6
+#*****************************************************************************************************************
+- name: Rule 3.3.7 | Ensure Reverse Path Filtering is enabled
+  sysctl:
+    name: "{{ item }}"
+    value: 1
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv4.conf.all.rp_filter
+    - net.ipv4.conf.default.rp_filter
+  when:
+    - rhel7cis_rule_3_3_7|bool
+  tags:
+      - level1
+      - rule_3.3.7
+#*****************************************************************************************************************
+- name: Rule 3.3.8 | Ensure TCP SYN Cookies is enabled
+  sysctl:
+    name: net.ipv4.tcp_syncookies
+    value: 1
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  when:
+    - rhel7cis_rule_3_3_8|bool
+  tags:
+      - level1
+      - rule_3.3.8
+#*****************************************************************************************************************
+- name: Rule 3.3.9 | Ensure IPv6 router advertisements are not accepted
+  sysctl:
+    name: "{{ item }}"
+    value: 0
+    state: present
+    reload: yes
+    sysctl_set: yes
+    ignoreerrors: yes
+  with_items:
+    - net.ipv6.conf.all.accept_ra
+    - net.ipv6.conf.default.accept_ra
+  when:
+    - rhel7cis_rule_3_3_9|bool
+  tags:
+      - level1
+      - rule_3.3.9
+#*****************************************************************************************************************
+- name: Verification if firewalld is installed and actived
+  debug:
+    msg: "{{ ansible_facts.services['firewalld.service'] }}"
+
+
+
+
+

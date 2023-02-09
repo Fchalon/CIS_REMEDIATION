@@ -1,0 +1,48 @@
+---
+# handlers file for compliance_rhel7
+- name: restart tmp.mount
+  systemd:
+    name: tmp.mount
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+    state: reloaded
+
+- name: remount var
+  mount :
+    path: /var
+    state: remounted
+- name: remount varlog
+  mount :
+    path: /var/log
+    state: remounted
+- name: remount vartmp
+  mount :
+    path: /var/tmp
+    state: remounted
+
+- name: remount tmp
+  mount :
+    path: /var/tmp
+    state: remounted
+- name: remount varlogaudit
+  mount :
+    path: /var/log/audit
+    state: remounted
+- name: remount home
+  mount :
+    path: /home
+    state: remounted
+- name: remount shm
+  mount :
+    path: /dev/shm
+    state: remounted
+
+- name: generate new grub config
+  become: yes
+  command: grub2-mkconfig -o /boot/grub2/grub.cfg
+
+- name: restart_sshd
+  systemd:
+    name: sshd
+    state: restarted

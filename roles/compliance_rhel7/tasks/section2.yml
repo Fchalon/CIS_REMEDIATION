@@ -1,0 +1,323 @@
+- name: Rule 2.1.1 | Ensure xinetd is not installed
+  yum:
+    name: xinetd
+    state: absent
+  when:
+    - rhel7cis_rule_2_1_1|bool
+  tags:
+    - rule_2.1.1
+    - level1
+    - xinetd
+#*****************************************************************************************************************
+
+- name: Rule 2.2.2 | Ensure X11 Server components are not installed
+  yum : 
+    name: xorg-x11-server*
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_2|bool
+  tags:
+    - rule_2.2.2
+    - level1
+    - xorg-x11-server
+#*****************************************************************************************************************
+- name: Rule 2.2.3 | Ensure Avahi Server is not installed
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - avahi-daemon.socket
+    - avahi-daemon.service
+  when:
+    - rhel7cis_rule_2_2_3|bool
+    - ansible_facts.services['avahi-daemon.service'] is defined
+  tags:
+    - rule_2.2.3
+    - level1
+    - avahi
+#*****************************************************************************************************************
+- name: Rule 2.2.3 | Ensure Avahi Server is not installed (remove package)
+  yum : 
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - avahi-autoipd
+    - avahi
+  when:
+    - rhel7cis_rule_2_2_3|bool
+    - ansible_facts.services['avahi-daemon.service'] is defined
+  tags:
+    - rule_2.2.3
+    - level1
+    - avahi
+#*****************************************************************************************************************
+- name: Rule 2.2.4 | Ensure CUPS is not installed
+  yum:
+    name: cups
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_4|bool
+  tags:
+    - rule_2.2.4
+    - level1
+    - cups
+#*****************************************************************************************************************
+- name: Rule 2.2.5 | Ensure DHCP Server is not installed
+  yum:
+    name: dhcp
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_5|bool
+  tags:
+    - rule_2.2.5
+    - level1
+    - dhcp
+#*****************************************************************************************************************
+- name: Rule 2.2.6 | Ensure LDAP server is not installed
+  yum:
+    name: openldap-servers
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_6|bool
+  tags:
+    - rule_2.2.6
+    - level1
+    - open_ldap
+#*****************************************************************************************************************
+- name: Rule 2.2.7 | Ensure DNS server is not installed
+  yum:
+    name: bind
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_7|bool
+  tags:
+    - rule_2.2.7
+    - level1
+    - dns
+#*****************************************************************************************************************
+- name: Rule 2.2.8 | Ensure FTP Server is not installed
+  yum:
+    name: vsftpd
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_8|bool
+  tags:
+    - rule_2.2.8
+    - level1
+    - ftp
+#*****************************************************************************************************************
+- name: Rule 2.2.9 | Ensure HTTP Server is not installed
+  yum:
+    name: httpd
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_9|bool
+  tags:
+    - rule_2.2.9
+    - level1
+    - http
+#*****************************************************************************************************************
+- name: Rule 2.2.10 | Ensure IMAP and POP3 Server is not installed
+  yum:
+    name: dovecot
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_10|bool
+  tags:
+    - rule_2.2.10
+    - level1
+    - imap
+#*****************************************************************************************************************
+- name: Rule 2.2.11 | Ensure Samba is not installed
+  yum:
+    name: samba
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_11|bool
+  tags:
+    - rule_2.2.11
+    - level1
+    - samba
+#*****************************************************************************************************************
+- name: Rule 2.2.12 | Ensure HTTP Proxy server is not installed
+  yum:
+    name: squid
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_12|bool
+  tags:
+    - rule_2.2.12
+    - level1
+    - squid
+#*****************************************************************************************************************
+- name: Rule 2.2.13 | Ensure net-snmp is not installed
+  yum:
+    name: net-snmp
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_13|bool
+  tags:
+    - rule_2.2.13
+    - level1
+    - net-snmp
+#*****************************************************************************************************************
+- name: Rule 2.2.14 | Ensure NIS server is not installed
+  yum:
+    name: ypserv
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_14|bool
+  tags:
+    - rule_2.2.14
+    - level1
+    - nis
+#*****************************************************************************************************************
+- name: Rule 2.2.15 | Ensure telnet server is not installed
+  yum:
+    name: telnet-server
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_15|bool
+  tags:
+    - rule_2.2.15
+    - level1
+    - telnet_server
+#*****************************************************************************************************************
+- name: Rule 2.2.17 | Ensure the  nfs-server service is masked
+  systemd:
+    name: nfs-server
+    enabled: no
+    state: stopped
+    masked: yes
+  when:
+    - rhel7cis_rule_2_2_17|bool
+    - ansible_facts.services['nfs-server.service'] is defined
+  tags:
+    - rule_2.2.17
+    - level1
+    - nfs-server
+#*****************************************************************************************************************
+- name: Rule 2.2.17 | Ensure nfs-utils is not installed
+  yum:
+    name: nfs-utils
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_17|bool
+    - rhelcis_nfs_utils_not_needed|bool
+  tags:
+    - rule_2.2.17
+    - level1
+    - nfs-utils
+#*****************************************************************************************************************
+- name: Rule 2.2.18 | Ensure the  rcpbind  service is masked
+  systemd:
+    name: "{{ item }}"
+    enabled: no
+    state: stopped
+    masked: yes
+  loop:
+    - rcpbind
+    - rcpbond.socket
+  when:
+    - rhel7cis_rule_2_2_18|bool
+    - ansible_facts.services['rcpbind.service'] is defined
+  tags:
+    - rule_2.2.18
+    - level1
+    - rcpbind
+#*****************************************************************************************************************
+- name: Rule 2.2.18 | Ensure rcpbind is not installed
+  yum:
+    name: rcpbind
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_18|bool
+    - rhelcis_rcpbind_not_needed|bool
+  tags:
+    - rule_2.2.18
+    - level1
+    - rcpbind
+#*****************************************************************************************************************
+- name: Rule 2.2.19 | Ensure the  rsyncd  service is masked
+  systemd:
+    name: rsyncd
+    enabled: no
+    state: stopped
+    masked: yes
+  when:
+    - rhel7cis_rule_2_2_19|bool
+    - ansible_facts.services['rsyncd.service'] is defined
+  tags:
+    - rule_2.2.18
+    - level1
+    - rsyncd
+#*****************************************************************************************************************
+- name: Rule 2.2.19 | Ensure rsync is not installed
+  yum:
+    name: rsync
+    state: absent
+  when:
+    - rhel7cis_rule_2_2_19|bool
+    - rhelcis_rsync_not_needed|bool
+  tags:
+    - rule_2.2.19
+    - level1
+    - rsync
+#*****************************************************************************************************************
+- name: Rule 2.3.1 | Ensure NIS client is not installed
+  yum:
+    name: ypbind
+    state: absent
+  when:
+    - rhel7cis_rule_2_3_1|bool
+  tags:
+    - rule_2.3.1
+    - level1
+    - nisclient
+#*****************************************************************************************************************
+- name: Rule 2.3.2 | Ensure rsh client is not installed
+  yum:
+    name: rsh
+    state: absent
+  when:
+    - rhel7cis_rule_2_3_2|bool
+  tags:
+    - rule_2.3.2
+    - level1
+    - rsh
+#*****************************************************************************************************************
+- name: Rule 2.3.3 | Ensure talk client is not installed
+  yum:
+    name: talk
+    state: absent
+  when:
+    - rhel7cis_rule_2_3_3|bool
+  tags:
+    - rule_2.3.3
+    - level1
+    - talk
+#*****************************************************************************************************************
+- name: Rule 2.3.4 | Ensure telnet client is not installed
+  yum:
+    name: telnet
+    state: absent
+  when:
+    - rhel7cis_rule_2_3_4|bool
+  tags:
+    - rule_2.3.4
+    - level1
+    - telnet
+#*****************************************************************************************************************
+- name: Rule 2.3.5 | Ensure LDAP client is not installed
+  yum:
+    name: openldap-client
+    state: absent
+  when:
+    - rhel7cis_rule_2_3_5|bool
+  tags:
+    - rule_2.3.5
+    - level1
+    - openldap_client
+
+
+

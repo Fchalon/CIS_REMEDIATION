@@ -1,0 +1,63 @@
+---
+- name: Populate service facts
+  service_facts:
+  tags:
+    - always
+- name: Create backup files
+  file:
+    path: "/root/backup-files/{{ inventory_hostname }}/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - etc
+    - etc/ssh
+    - etc/pam.d
+  tags:
+    - always
+#- name: Copy configuration files
+ # copy:
+  #  src: "{{ item }}"
+   # dest: "/root/backup-files/{{ inventory_hostname }}/{{ item }}-{{ date }}"
+    #remote_src: yes
+ # with_items:
+  #  - /etc/ssh/sshd_config
+   # - /etc/pam.d/system-auth
+   # - /etc/pam.d/password-auth
+   # - /etc/sysctl.conf
+  #tags:
+   # - always
+
+# tasks file for compliance_rhel7
+- include: section1.yml
+  become: yes
+  when: rhel7cis_section1|bool
+  tags:
+      - rhel7cis_section1
+
+
+- include: section2.yml
+  become: yes
+  when: rhel7cis_section2|bool
+  tags:
+      - rhel7cis_section2
+
+- include: section3.yml
+  become: yes
+  when: rhel7cis_section3|bool
+  tags:
+      - rhel7cis_section3
+
+- include: section4.yml
+  become: yes
+  when: rhel7cis_section4|bool
+  tags:
+      - rhel7cis_section4
+
+- include: section5.yml
+  become: yes
+  when: rhel7cis_section5|bool
+  tags:
+      - rhel7cis_section5
+

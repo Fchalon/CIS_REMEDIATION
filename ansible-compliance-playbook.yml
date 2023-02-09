@@ -1,0 +1,9 @@
+- name: Running  RHEL CIS
+  hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+
+  roles:
+    - { role: compliance_rhel7}
+
